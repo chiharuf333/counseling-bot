@@ -23,9 +23,7 @@ module.exports = async function handler(req, res) {
   console.log('EVENT:', JSON.stringify(body.event));
   if (!event || !event.files) return res.status(200).send('OK');
 
-  const audioFile = event.files.find(f =>
-    ['mp3', 'm4a', 'mp4', 'wav', 'webm'].includes(f.filetype)
-  );
+ 
 const audioFile = event.files.find(f =>
   ['mp3', 'm4a', 'mp4', 'wav', 'webm'].includes(f.filetype)
 );

@@ -29,27 +29,16 @@ module.exports = async function handler(req, res) {
   const channel = event.channel;
   const slackToken = process.env.SLACK_BOT_TOKEN;
   const asmKey = process.env.ASSEMBLYAI_API_KEY;
-
-  res.status(200).send('OK');
+  const kvUrl = process.env.KV_REST_API_URL;
+  const kvToken = process.env.KV_REST_API_TOKEN;
 
   try {
-    console.log('Downloading file:', audioFile.name);
-    const fileResp = await axios.get(audioFile.url_private_download || audioFile.url_private, {
-      headers: { Authorization: 'Bearer ' + slackToken },
-      responseType: 'arraybuffer',
-      maxContentLength: 50 * 1024 * 1024
-    });
-
-    console.log('Uploading to AssemblyAI...');
-    const uploadResp = await axios.post('https://api.assemblyai.com/v2/upload', fileResp.data, {
-      headers: { authorization: asmKey, 'content-type': 'application/octet-stream' },
-      maxContentLength: 50 * 1024 * 1024
-    });
-
-    console.log('Starting transcription...');
+    // AssemblyAIにSlackのURLを直接渡す（ダウンロード不要）
+    const audioUrl = audioFile.url_private_download || audioFile.url_private;
+    
     const webhookUrl = 'https://counseling-bot-eight.vercel.app/api/webhook';
     const transcriptResp = await axios.post('https://api.assemblyai.com/v2/transcript', {
-      audio_url: uploadResp.data.upload_url,
+      audio_url: audioUrl,
       language_detection: true,
       speaker_labels: true,
       speakers_expected: 2,
@@ -61,8 +50,6 @@ module.exports = async function handler(req, res) {
     const transcriptId = transcriptResp.data.id;
     const recordId = 'rec_' + Date.now();
 
-    const kvUrl = process.env.KV_REST_API_URL;
-    const kvToken = process.env.KV_REST_API_TOKEN;
     await axios.post(`${kvUrl}/set/${encodeURIComponent('job:' + transcriptId)}`,
       JSON.stringify({ channel, fileName: audioFile.name, recordId, receivedAt: new Date().toISOString() }),
       { headers: { Authorization: `Bearer ${kvToken}`, 'Content-Type': 'application/json' } }
@@ -73,7 +60,8 @@ module.exports = async function handler(req, res) {
       text: `🎙️ *${audioFile.name}* の文字起こしを開始しました！\n完了したらここに通知します。`
     }, { headers: { Authorization: 'Bearer ' + slackToken } });
 
-    console.log('Done! transcriptId:', transcriptId);
+    console.log('Started transcription:', transcriptId);
+    return res.status(200).send('OK');
 
   } catch(err) {
     console.error('ERROR:', err.message);
@@ -81,5 +69,6 @@ module.exports = async function handler(req, res) {
       channel,
       text: '❌ エラーが発生しました: ' + err.message
     }, { headers: { Authorization: 'Bearer ' + slackToken } }).catch(() => {});
+    return res.status(200).send('OK');
   }
 };

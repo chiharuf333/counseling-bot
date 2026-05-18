@@ -47,7 +47,7 @@ module.exports = async function handler(req, res) {
     );
 
     await axios.post(`${kvUrl}/lpush/${encodeURIComponent('transcripts:pending')}`,
-      JSON.stringify(JSON.stringify(record.id)),
+      JSON.stringify(record.id),
       { headers: { Authorization: `Bearer ${kvToken}`, 'Content-Type': 'application/json' } }
     );
 

@@ -1,24 +1,5 @@
 const axios = require('axios');
 
-// Upstash Redis REST API helper
-async function redisSet(key, value) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  await axios.post(`${url}/set/${encodeURIComponent(key)}`, 
-    JSON.stringify(value),
-    { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-  );
-}
-
-async function redisPush(listKey, value) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  await axios.post(`${url}/lpush/${encodeURIComponent(listKey)}`,
-    JSON.stringify(JSON.stringify(value)),
-    { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
-  );
-}
-
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
@@ -49,7 +30,6 @@ module.exports = async function handler(req, res) {
   const slackToken = process.env.SLACK_BOT_TOKEN;
   const asmKey = process.env.ASSEMBLYAI_API_KEY;
 
-  // Slackに即座に返答（タイムアウト防止）
   res.status(200).send('OK');
 
   try {
@@ -76,44 +56,27 @@ module.exports = async function handler(req, res) {
     }, { headers: { authorization: asmKey } });
 
     const transcriptId = transcriptResp.data.id;
+    const recordId = 'rec_' + Date.now();
+    const receivedAt = new Date().toISOString();
 
+    // 4. Slackに通知
     await axios.post('https://slack.com/api/chat.postMessage', {
       channel,
-      text: `🎙️ *${audioFile.name}* の文字起こしを開始しました！\n完了までしばらくお待ちください（1〜2分）`
+      text: `🎙️ *${audioFile.name}* の文字起こしを開始しました！\n完了までしばらくお待ちください（音声が長い場合は数分かかります）`
     }, { headers: { Authorization: 'Bearer ' + slackToken } });
 
-    // 4. 完了までポーリング（最大10分）
-    let transcript = null;
-    for (let i = 0; i < 120; i++) {
-      await new Promise(r => setTimeout(r, 5000));
-      const poll = await axios.get(`https://api.assemblyai.com/v2/transcript/${transcriptId}`, {
-        headers: { authorization: asmKey }
-      });
-      if (poll.data.status === 'completed') { transcript = poll.data; break; }
-      if (poll.data.status === 'error') throw new Error('文字起こしエラー: ' + poll.data.error);
-    }
-    if (!transcript) throw new Error('タイムアウト');
+    // 5. poll.jsを非同期で呼び出す
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+     : 'https://counseling-bot-eight.vercel.app';
 
-    // 5. Redisに保存
-    const record = {
-      id: 'rec_' + Date.now(),
+    axios.post(`${baseUrl}/api/poll`, {
       transcriptId,
       fileName: audioFile.name,
-      transcript: transcript.text,
-      utterances: transcript.utterances || [],
       slackChannel: channel,
-      receivedAt: new Date().toISOString(),
-      status: 'pending' // 未分析
-    };
-
-    await redisSet('transcript:' + record.id, record);
-    await redisPush('transcripts:pending', record.id);
-
-    // 6. Slackに完了通知
-    await axios.post('https://slack.com/api/chat.postMessage', {
-      channel,
-      text: `✅ *${audioFile.name}* の文字起こしが完了しました！\n\nカウンセリング分析ツールで分析できます👇\nhttps://chiharuf333.github.io/counseling-tool/`
-    }, { headers: { Authorization: 'Bearer ' + slackToken } });
+      recordId,
+      receivedAt
+    }).catch(e => console.error('poll call error:', e.message));
 
   } catch(err) {
     console.error('ERROR:', err.message);

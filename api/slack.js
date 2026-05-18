@@ -33,12 +33,23 @@ module.exports = async function handler(req, res) {
   const kvToken = process.env.KV_REST_API_TOKEN;
 
   try {
-    // AssemblyAIにSlackのURLを直接渡す（ダウンロード不要）
-    const audioUrl = audioFile.url_private_download || audioFile.url_private;
-    
+    // 1. Slackからファイルダウンロード
+    const fileResp = await axios.get(audioFile.url_private_download || audioFile.url_private, {
+      headers: { Authorization: 'Bearer ' + slackToken },
+      responseType: 'arraybuffer',
+      maxContentLength: 50 * 1024 * 1024
+    });
+
+    // 2. AssemblyAIにアップロード
+    const uploadResp = await axios.post('https://api.assemblyai.com/v2/upload', fileResp.data, {
+      headers: { authorization: asmKey, 'content-type': 'application/octet-stream' },
+      maxContentLength: 50 * 1024 * 1024
+    });
+
+    // 3. 文字起こし開始（webhook付き）
     const webhookUrl = 'https://counseling-bot-eight.vercel.app/api/webhook';
     const transcriptResp = await axios.post('https://api.assemblyai.com/v2/transcript', {
-      audio_url: audioUrl,
+      audio_url: uploadResp.data.upload_url,
       language_detection: true,
       speaker_labels: true,
       speakers_expected: 2,
@@ -50,11 +61,13 @@ module.exports = async function handler(req, res) {
     const transcriptId = transcriptResp.data.id;
     const recordId = 'rec_' + Date.now();
 
+    // 4. Redisにジョブ情報を保存
     await axios.post(`${kvUrl}/set/${encodeURIComponent('job:' + transcriptId)}`,
       JSON.stringify({ channel, fileName: audioFile.name, recordId, receivedAt: new Date().toISOString() }),
       { headers: { Authorization: `Bearer ${kvToken}`, 'Content-Type': 'application/json' } }
     );
 
+    // 5. Slackに通知
     await axios.post('https://slack.com/api/chat.postMessage', {
       channel,
       text: `🎙️ *${audioFile.name}* の文字起こしを開始しました！\n完了したらここに通知します。`

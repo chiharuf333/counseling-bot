@@ -1,8 +1,10 @@
 {
   "functions": {
     "api/slack.js": {
-      "memory": 1024,
       "maxDuration": 300
+    },
+    "api/webhook.js": {
+      "maxDuration": 60
     }
   }
 }

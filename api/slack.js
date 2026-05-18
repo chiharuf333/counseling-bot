@@ -50,7 +50,7 @@ module.exports = async function handler(req, res) {
       language_detection: true,
       speaker_labels: true,
       speakers_expected: 2,
-      speech_model: 'universal',
+      speech_models: ['universal'],
       webhook_url: webhookUrl,
       webhook_auth_header_name: 'x-webhook-secret',
       webhook_auth_header_value: 'counseling-secret-2024'

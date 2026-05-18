@@ -1,7 +1,4 @@
-console.log('HAS FILES:', event && !!event.files);
-console.log('BOT ID:', event && event.bot_id);module.exports = async function handler(req, res) {
-console.log('BODY TYPE:', body && body.type);
-  console.log('EVENT:', JSON.stringify(body.event));
+{
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
   const rawBody = await new Promise((resolve, reject) => {
@@ -14,6 +11,8 @@ console.log('BODY TYPE:', body && body.type);
   let body;
   try { body = JSON.parse(rawBody); }
   catch { return res.status(400).send('Bad Request'); }
+console.log('BODY TYPE:', body && body.type);
+console.log('EVENT:', JSON.stringify(body.event));
 
   // URL検証（Slack初回確認）
   if (body.type === 'url_verification') {

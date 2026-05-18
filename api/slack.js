@@ -19,20 +19,12 @@ module.exports = async function handler(req, res) {
   }
 
   const event = body.event;
-// デバッグ用
-  console.log('EVENT:', JSON.stringify(body.event));
   if (!event || !event.files) return res.status(200).send('OK');
 
- 
-const audioFile = event.files.find(f =>
-  ['mp3', 'm4a', 'mp4', 'wav', 'webm'].includes(f.filetype)
-);
-console.log('AUDIO FILE:', audioFile ? audioFile.name : 'NOT FOUND'); // ←ここ
-if (!audioFile) return res.status(200).send('OK');  
-if (!audioFile) return res.status(200).send('OK');
-try {
-  console.log('Starting file download...'); // ←追加
-  const fileResp = await axios.get(audioFile.url_private_download || audioFile.url_private, {
+  const audioFile = event.files.find(f =>
+    ['mp3', 'm4a', 'mp4', 'wav', 'webm'].includes(f.filetype)
+  );
+  if (!audioFile) return res.status(200).send('OK');
 
   const channel = event.channel;
   const slackToken = process.env.SLACK_BOT_TOKEN;
@@ -41,20 +33,20 @@ try {
   res.status(200).send('OK');
 
   try {
-    // 1. Slackから音声ファイルを取得
+    console.log('Downloading file:', audioFile.name);
     const fileResp = await axios.get(audioFile.url_private_download || audioFile.url_private, {
       headers: { Authorization: 'Bearer ' + slackToken },
       responseType: 'arraybuffer',
       maxContentLength: 50 * 1024 * 1024
     });
 
-    // 2. AssemblyAIにアップロード
+    console.log('Uploading to AssemblyAI...');
     const uploadResp = await axios.post('https://api.assemblyai.com/v2/upload', fileResp.data, {
       headers: { authorization: asmKey, 'content-type': 'application/octet-stream' },
       maxContentLength: 50 * 1024 * 1024
     });
 
-    // 3. 文字起こし開始（webhook付き）
+    console.log('Starting transcription...');
     const webhookUrl = 'https://counseling-bot-eight.vercel.app/api/webhook';
     const transcriptResp = await axios.post('https://api.assemblyai.com/v2/transcript', {
       audio_url: uploadResp.data.upload_url,
@@ -69,19 +61,19 @@ try {
     const transcriptId = transcriptResp.data.id;
     const recordId = 'rec_' + Date.now();
 
-    // 4. transcriptIdとchannelを一時保存
-    const url = process.env.KV_REST_API_URL;
-    const token = process.env.KV_REST_API_TOKEN;
-    await axios.post(`${url}/set/${encodeURIComponent('job:' + transcriptId)}`,
+    const kvUrl = process.env.KV_REST_API_URL;
+    const kvToken = process.env.KV_REST_API_TOKEN;
+    await axios.post(`${kvUrl}/set/${encodeURIComponent('job:' + transcriptId)}`,
       JSON.stringify({ channel, fileName: audioFile.name, recordId, receivedAt: new Date().toISOString() }),
-      { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+      { headers: { Authorization: `Bearer ${kvToken}`, 'Content-Type': 'application/json' } }
     );
 
-    // 5. Slackに通知
     await axios.post('https://slack.com/api/chat.postMessage', {
       channel,
       text: `🎙️ *${audioFile.name}* の文字起こしを開始しました！\n完了したらここに通知します。`
     }, { headers: { Authorization: 'Bearer ' + slackToken } });
+
+    console.log('Done! transcriptId:', transcriptId);
 
   } catch(err) {
     console.error('ERROR:', err.message);

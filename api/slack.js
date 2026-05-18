@@ -26,7 +26,12 @@ module.exports = async function handler(req, res) {
   const audioFile = event.files.find(f =>
     ['mp3', 'm4a', 'mp4', 'wav', 'webm'].includes(f.filetype)
   );
-  if (!audioFile) return res.status(200).send('OK');
+const audioFile = event.files.find(f =>
+  ['mp3', 'm4a', 'mp4', 'wav', 'webm'].includes(f.filetype)
+);
+console.log('AUDIO FILE:', audioFile ? audioFile.name : 'NOT FOUND'); // ←ここ
+if (!audioFile) return res.status(200).send('OK');  
+if (!audioFile) return res.status(200).send('OK');
 
   const channel = event.channel;
   const slackToken = process.env.SLACK_BOT_TOKEN;

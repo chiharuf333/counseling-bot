@@ -292,6 +292,11 @@ textarea:focus{border-color:var(--teal);background:var(--white)}
         <div class="nav-item-label">全分析一覧</div>
         <div class="nav-item-count" id="nav-all-count">1</div>
       </div>
+      <div class="nav-item" id="nav-pending" onclick="showPage(&#39;pending&#39;)">
+        <div class="nav-item-icon">📥</div>
+        <div class="nav-item-label">分析未完了</div>
+        <div class="nav-item-count" id="nav-pending-count" style="background:#C87A1A;color:white;display:none">0</div>
+      </div>
       <div class="nav-item" id="nav-new" onclick="showPage(&#39;new&#39;)">
         <div class="nav-item-icon">＋</div>
         <div class="nav-item-label">新規分析</div>
@@ -327,6 +332,19 @@ textarea:focus{border-color:var(--teal);background:var(--white)}
   <div class="main">
 
     <!-- ALL LIST -->
+    <!-- ══ 分析未完了ページ ══ -->
+    <div class="page" id="page-pending">
+      <div class="page-container">
+        <div class="page-header">
+          <div class="page-header-top">
+            <div><div class="page-title">📥 分析未完了</div><div class="page-subtitle">Slackから届いた文字起こしをここで分析できます</div></div>
+            <button onclick="loadPendingTranscripts()" style="height:36px;padding:0 16px;background:var(--teal);color:white;border:none;border-radius:9px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">🔄 更新</button>
+          </div>
+        </div>
+        <div id="pending-list"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">読み込み中...</div></div></div>
+      </div>
+    </div>
+
     <div class="page show" id="page-all">
       <div class="page-container">
         <div class="page-header">
@@ -1463,6 +1481,7 @@ function showPage(name,clinicName){
   document.querySelectorAll('.nav-item[id^="nav-"]').forEach(el=>el.classList.remove('active'));
   if(name==='all')       document.getElementById('nav-all')?.classList.add('active');
   if(name==='new')       document.getElementById('nav-new')?.classList.add('active');
+  if(name==='pending')   document.getElementById('nav-pending')?.classList.add('active');
   // clinic tabs in sidebar
   document.querySelectorAll('.sidebar-clinic-item').forEach(el=>{
     el.classList.toggle('active', name==='clinic' && el.dataset.clinic===clinicName);
@@ -2727,6 +2746,92 @@ function renderAudioAnalysis(data,spkRatio){
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function escAttr(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function escAttr(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+
+// ── Pending Transcripts (Redis) ──
+const REDIS_URL = "https://knowing-lynx-118463.upstash.io";
+const REDIS_READ_TOKEN = "ggAAAAAAAc6_AAIgcDLu-mG3hdsm-FvDKAc_xRkxBMRmjg1OPHPnMaU2MkxYWg";
+
+async function redisGet(key) {
+  const res = await fetch(`${REDIS_URL}/get/${encodeURIComponent(key)}`, {
+    headers: { Authorization: `Bearer ${REDIS_READ_TOKEN}` }
+  });
+  const data = await res.json();
+  return data.result ? JSON.parse(data.result) : null;
+}
+
+async function redisList(listKey) {
+  const res = await fetch(`${REDIS_URL}/lrange/${encodeURIComponent(listKey)}/0/-1`, {
+    headers: { Authorization: `Bearer ${REDIS_READ_TOKEN}` }
+  });
+  const data = await res.json();
+  return data.result || [];
+}
+
+async function loadPendingTranscripts() {
+  const el = document.getElementById("pending-list");
+  el.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><div class="empty-title">読み込み中...</div></div>';
+  try {
+    const ids = await redisList("transcripts:pending");
+    if (!ids || ids.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">未分析の音声データはありません</div></div>';
+      document.getElementById("nav-pending-count").style.display = "none";
+      return;
+    }
+    const records = await Promise.all(ids.map(id => redisGet("transcript:" + id)));
+    const valid = records.filter(Boolean);
+    const countEl = document.getElementById("nav-pending-count");
+    countEl.textContent = valid.length;
+    countEl.style.display = valid.length > 0 ? "" : "none";
+    el.innerHTML = valid.map(r => {
+      const preview = (r.transcript || "").slice(0, 200) + ((r.transcript || "").length > 200 ? "..." : "");
+      const dateStr = new Date(r.receivedAt).toLocaleString("ja-JP");
+      const rJson = JSON.stringify(r).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+      return `<div class="card" style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px">🎙️</span>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--navy)">${escHtml(r.fileName||"音声ファイル")}</div>
+              <div style="font-size:11px;color:var(--muted)">${dateStr}</div>
+            </div>
+          </div>
+          <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;background:var(--amberP);color:var(--amberD)">⏳ 未分析</span>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;line-height:1.7;color:var(--text);max-height:100px;overflow:hidden;white-space:pre-wrap">${escHtml(preview)}</div>
+        <button onclick='usePendingTranscript(this)' data-record="${rJson}" style="width:100%;height:38px;background:var(--teal);color:white;border:none;border-radius:9px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">このカウンセリングを分析する →</button>
+      </div>`;
+    }).join("");
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">❌</div><div class="empty-title">読み込みエラー: ${e.message}</div></div>`;
+  }
+}
+
+function usePendingTranscript(btn) {
+  const r = JSON.parse(btn.dataset.record.replace(/&quot;/g, '"').replace(/&#39;/g, "'"));
+  const utterances = r.utterances || [];
+  const text = utterances.length > 0
+    ? utterances.map(u => "[話者"+u.speaker+"] "+u.text).join("\n")
+    : (r.transcript || "");
+  showPage("new");
+  setTimeout(() => {
+    const ta = document.getElementById("transcript");
+    if (ta) { ta.value = text; ta.dispatchEvent(new Event("input")); }
+    const cc = document.getElementById("charCount");
+    if (cc) cc.textContent = text.length;
+  }, 100);
+}
+
+window.addEventListener("load", async () => {
+  try {
+    const ids = await redisList("transcripts:pending");
+    const countEl = document.getElementById("nav-pending-count");
+    if (ids && ids.length > 0) {
+      countEl.textContent = ids.length;
+      countEl.style.display = "";
+    }
+  } catch(e) {}
+});
+
 </script>
 
 

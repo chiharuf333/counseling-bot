@@ -1,7 +1,7 @@
-const crypto = require('crypto');
-const axios = require('axios');
-
-module.exports = async function handler(req, res) {
+console.log('HAS FILES:', event && !!event.files);
+console.log('BOT ID:', event && event.bot_id);module.exports = async function handler(req, res) {
+console.log('BODY TYPE:', body && body.type);
+  console.log('EVENT:', JSON.stringify(body.event));
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
   const rawBody = await new Promise((resolve, reject) => {

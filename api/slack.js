@@ -20,53 +20,61 @@ module.exports = async function handler(req, res) {
   }
 
   const event = body.event;
-  console.log('EVENT TYPE:', event && event.type);
-  console.log('SUBTYPE:', event && event.subtype);
-  console.log('HAS FILES:', event && event.files && event.files.length);
-  console.log('BOT ID:', event && event.bot_id);
-
-  if (!event || !event.files) {
-    return res.status(200).send('OK');
-  }
+  if (!event || !event.files) return res.status(200).send('OK');
 
   const audioFile = event.files.find(function(f) {
     return ['mp3', 'm4a', 'mp4', 'wav', 'webm'].includes(f.filetype);
   });
-
-  console.log('AUDIO FILE:', audioFile && audioFile.name);
-
   if (!audioFile) return res.status(200).send('OK');
 
   const channel = event.channel;
-  const token = process.env.SLACK_BOT_TOKEN;
+  const slackToken = process.env.SLACK_BOT_TOKEN;
+  const asmKey = process.env.ASSEMBLYAI_API_KEY;
 
-  const toolUrl = 'https://chiharuf333.github.io/counseling-tool/?audio='
-    + encodeURIComponent(audioFile.url_private)
-    + '&token=' + encodeURIComponent(token);
+  try {
+    // 1. Slackから音声ファイルを取得
+    const fileResp = await axios.get(audioFile.url_private_download || audioFile.url_private, {
+      headers: { Authorization: 'Bearer ' + slackToken },
+      responseType: 'arraybuffer',
+      maxContentLength: 50 * 1024 * 1024
+    });
 
-  await axios.post('https://slack.com/api/chat.postMessage', {
-    channel: channel,
-    blocks: [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: '🎙️ 音声ファイルを受信しました！\n*' + audioFile.name + '*\n\n以下のリンクから分析できます👇'
-        }
+    // 2. AssemblyAIにアップロード
+    const uploadResp = await axios.post('https://api.assemblyai.com/v2/upload', fileResp.data, {
+      headers: {
+        authorization: asmKey,
+        'content-type': 'application/octet-stream'
       },
-      {
-        type: 'actions',
-        elements: [
-          {
-            type: 'button',
-            text: { type: 'plain_text', text: '📊 分析ツールで開く' },
-            url: toolUrl,
-            style: 'primary'
-          }
-        ]
-      }
-    ]
-  }, { headers: { Authorization: 'Bearer ' + token } });
+      maxContentLength: 50 * 1024 * 1024
+    });
+    const uploadUrl = uploadResp.data.upload_url;
 
-  return res.status(200).send('OK');
+    // 3. 文字起こし開始
+    const transcriptResp = await axios.post('https://api.assemblyai.com/v2/transcript', {
+      audio_url: uploadUrl,
+      speech_models: ["universal-3-pro", "universal-2"],
+      language_detection: true,
+      speaker_labels: true,
+      speakers_expected: 2
+    }, { headers: { authorization: asmKey } });
+
+    const transcriptId = transcriptResp.data.id;
+
+    // 4. Slackに通知
+    await axios.post('https://slack.com/api/chat.postMessage', {
+      channel: channel,
+      text: '🎙️ *' + audioFile.name + '* の文字起こしを開始しました！\n\n文字起こしID: `' + transcriptId + '`\n\n完了までしばらくお待ちください（1〜2分）'
+    }, { headers: { Authorization: 'Bearer ' + slackToken } });
+
+    return res.status(200).send('OK');
+
+  } catch(err) {
+    console.error('ERROR:', err.message);
+    await axios.post('https://slack.com/api/chat.postMessage', {
+      channel: channel,
+      text: '❌ エラーが発生しました: ' + err.message
+    }, { headers: { Authorization: 'Bearer ' + slackToken } }).catch(function(){});
+
+    return res.status(200).send('OK');
+  }
 };

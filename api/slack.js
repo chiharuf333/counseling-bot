@@ -30,6 +30,9 @@ const audioFile = event.files.find(f =>
 console.log('AUDIO FILE:', audioFile ? audioFile.name : 'NOT FOUND'); // ←ここ
 if (!audioFile) return res.status(200).send('OK');  
 if (!audioFile) return res.status(200).send('OK');
+try {
+  console.log('Starting file download...'); // ←追加
+  const fileResp = await axios.get(audioFile.url_private_download || audioFile.url_private, {
 
   const channel = event.channel;
   const slackToken = process.env.SLACK_BOT_TOKEN;

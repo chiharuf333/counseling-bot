@@ -46,37 +46,34 @@ module.exports = async function handler(req, res) {
       maxContentLength: 50 * 1024 * 1024
     });
 
-    // 3. 文字起こし開始
+    // 3. 文字起こし開始（webhook付き）
+    const webhookUrl = 'https://counseling-bot-eight.vercel.app/api/webhook';
     const transcriptResp = await axios.post('https://api.assemblyai.com/v2/transcript', {
       audio_url: uploadResp.data.upload_url,
-      speech_models: ["universal-3-pro", "universal-2"],
       language_detection: true,
       speaker_labels: true,
-      speakers_expected: 2
+      speakers_expected: 2,
+      webhook_url: webhookUrl,
+      webhook_auth_header_name: 'x-webhook-secret',
+      webhook_auth_header_value: 'counseling-secret-2024'
     }, { headers: { authorization: asmKey } });
 
     const transcriptId = transcriptResp.data.id;
     const recordId = 'rec_' + Date.now();
-    const receivedAt = new Date().toISOString();
 
-    // 4. Slackに通知
+    // 4. transcriptIdとchannelを一時保存
+    const url = process.env.KV_REST_API_URL;
+    const token = process.env.KV_REST_API_TOKEN;
+    await axios.post(`${url}/set/${encodeURIComponent('job:' + transcriptId)}`,
+      JSON.stringify({ channel, fileName: audioFile.name, recordId, receivedAt: new Date().toISOString() }),
+      { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+    );
+
+    // 5. Slackに通知
     await axios.post('https://slack.com/api/chat.postMessage', {
       channel,
-      text: `🎙️ *${audioFile.name}* の文字起こしを開始しました！\n完了までしばらくお待ちください（音声が長い場合は数分かかります）`
+      text: `🎙️ *${audioFile.name}* の文字起こしを開始しました！\n完了したらここに通知します。`
     }, { headers: { Authorization: 'Bearer ' + slackToken } });
-
-    // 5. poll.jsを非同期で呼び出す
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-     : 'https://counseling-bot-eight.vercel.app';
-
-    axios.post(`${baseUrl}/api/poll`, {
-      transcriptId,
-      fileName: audioFile.name,
-      slackChannel: channel,
-      recordId,
-      receivedAt
-    }).catch(e => console.error('poll call error:', e.message));
 
   } catch(err) {
     console.error('ERROR:', err.message);

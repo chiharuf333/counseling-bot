@@ -1,4 +1,7 @@
-{
+const crypto = require('crypto');
+const axios = require('axios');
+
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
   const rawBody = await new Promise((resolve, reject) => {
@@ -11,15 +14,14 @@
   let body;
   try { body = JSON.parse(rawBody); }
   catch { return res.status(400).send('Bad Request'); }
-console.log('BODY TYPE:', body && body.type);
-console.log('EVENT:', JSON.stringify(body.event));
 
-  // URL検証（Slack初回確認）
+  console.log('BODY TYPE:', body && body.type);
+  console.log('EVENT:', JSON.stringify(body.event));
+
   if (body.type === 'url_verification') {
     return res.status(200).json({ challenge: body.challenge });
   }
 
-  // 署名検証
   const timestamp = req.headers['x-slack-request-timestamp'];
   const signature = req.headers['x-slack-signature'];
   if (timestamp && signature) {
@@ -48,12 +50,12 @@ console.log('EVENT:', JSON.stringify(body.event));
   const channel = event.channel;
   const token = process.env.SLACK_BOT_TOKEN;
 
-  // ツールのURLを生成（音声URLとtokenをパラメータで渡す）
+  res.status(200).send('OK');
+
   const toolUrl = 'https://chiharuf333.github.io/counseling-tool/?audio='
     + encodeURIComponent(audioFile.url_private)
     + '&token=' + encodeURIComponent(token);
 
-  // SlackにツールのURLを送信
   await axios.post('https://slack.com/api/chat.postMessage', {
     channel: channel,
     blocks: [
@@ -61,7 +63,7 @@ console.log('EVENT:', JSON.stringify(body.event));
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: '🎙️ 音声ファイルを受信しました！\n*' + audioFile.name + '*\n\n以下のリンクからカウンセリング分析ツールで分析できます👇'
+          text: '🎙️ 音声ファイルを受信しました！\n*' + audioFile.name + '*\n\n以下のリンクから分析できます👇'
         }
       },
       {
@@ -77,6 +79,4 @@ console.log('EVENT:', JSON.stringify(body.event));
       }
     ]
   }, { headers: { Authorization: 'Bearer ' + token } });
-
-  return res.status(200).send('OK');
 };

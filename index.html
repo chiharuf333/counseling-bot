@@ -2871,8 +2871,12 @@ function usePendingTranscript(btn) {
     audioAnalysis = { spkRatio, silences, utterances: utts.length, avgSilence, audioSkillScores };
   }
 
+  analysisResult = null; // 前の分析結果をリセット
   showPage("new");
   _pendingRecordId = r.id; // 保存時にRedisから削除するため
+  // 前の分析結果を非表示にする
+  const rb = document.getElementById('resultBox');
+  if (rb) { rb.className = 'result-box'; rb.style.display = ''; }
   setTimeout(() => {
     const ta = document.getElementById("transcript");
     if (ta) { ta.value = text; ta.dispatchEvent(new Event("input")); }

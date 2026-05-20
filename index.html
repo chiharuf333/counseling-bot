@@ -1346,6 +1346,7 @@ const SCORE_BG={3:'#EAF7EF',2:'#E8F4F4',1:'#FEF5EC',0:'#F4F6F9'};
 
 let analysisResult=null;
 let currentClinic=null;
+let _pendingRecordId=null; // 分析未完了から開いたときのRedis ID
 let activeStaff=null;
 let currentClinicTab='records';
 
@@ -1748,13 +1749,18 @@ function buildPrompt(clinic,staff,type,date,transcript){
     const stepsText=stepsDef.map(s=>`STEP${s.num}「${s.label}」: ${s.hint}`).join('\n');
     const stepCount=stepsDef.length;
     return `あなたは歯科クリニックの専任カウンセリングコーチです。
-スタッフの成長を心から応援する立場で、録音を丁寧に聞いた上でフィードバックしてください。
+スタッフの成長を心から応援する立場で、以下の【文字起こし】を最初から最後まで丁寧に読んだ上でフィードバックしてください。
+
+【重要ルール】
+- 評価・コメントは必ず【文字起こし】の実際の発言・内容のみを根拠にすること
+- 文字起こしに存在しない場面・発言・やりとりは絶対に作らないこと
+- good・improveは文字起こしの中の具体的な発言や場面を根拠に書くこと
+- 文字起こしにそのステップが存在しない場合はscore:0、good:"",improve:"未実施"とすること
 
 【あなたのスタンス】
 - まず「できていること」を具体的に見つけて、しっかり言葉にして褒める
 - 改善点は「ここをちょっと変えるだけでもっと良くなる！」という視点で伝える
 - 読んだスタッフが「よし、次も頑張ろう！」と思えるような温かいトーンで書く
-- 文字起こしの具体的な発言を引用して評価する
 
 【評価する${stepCount}ステップの型（${type}）】
 ${stepsText}
@@ -1767,35 +1773,39 @@ ${transcript}
 
 以下のJSON形式のみで出力してください（前後テキスト・コードブロック不要）:
 {
-  "intro": "担当者名を呼びかけて始める。具体的に光っていた場面を1つ挙げて褒め、さらに良くなれる予感も添える【100文字以内】",
+  "intro": "担当者名を呼びかけて始める。文字起こしの中の具体的な場面を1つ引用して褒め、さらに良くなれる予感も添える【100文字以内】",
   "steps": [
-    ${stepsDef.map(s=>`{"num":${s.num},"label":"${s.label}","score":0〜3,"good":"できていた点【40文字以内・なければ空文字】","improve":"次にやってみてほしいことを前向きに【40文字以内・なければ空文字】"}`).join(',\n    ')}
+    ${stepsDef.map(s=>`{"num":${s.num},"label":"${s.label}","score":0〜3,"good":"文字起こしの根拠となる発言を含めて【40文字以内・なければ空文字】","improve":"次にやってみてほしいことを前向きに【40文字以内・なければ空文字】"}`).join(',\n    ')}
   ],
   "goods": [
-    {"num":"①","title":"光っていたポイントのタイトル【12文字以内】","body":"なぜ良かったのか具体的に【50文字以内】"},
+    {"num":"①","title":"光っていたポイントのタイトル【12文字以内】","body":"文字起こしの具体的な発言を根拠に【50文字以内】"},
     {"num":"②","title":"","body":""},
     {"num":"③","title":"","body":""}
   ],
   "improves": [
-    {"theme":"テーマ【10文字以内】","issue":"現状の気づきを事実として【35文字以内】","suggestion":"具体的にどう変えるか前向きに【45文字以内】"},
+    {"theme":"テーマ【10文字以内】","issue":"文字起こしの事実を根拠に【35文字以内】","suggestion":"具体的にどう変えるか前向きに【45文字以内】"},
     {"theme":"","issue":"","suggestion":""},
     {"theme":"","issue":"","suggestion":""},
     {"theme":"","issue":"","suggestion":""}
   ]
 }
 採点：score 3=◎できている！ 2=○あとすこし 1=△もうひとふんばり！ 0=—未実施
-必ず文字起こしの内容を根拠に評価してください。架空の内容は書かないでください。`;
+【文字起こし】に存在しない内容は絶対に書かないでください。`;
 
   } else {
     // ── ステップなし（その他） ──
     return `あなたは歯科クリニックの専任カウンセリングコーチです。
-スタッフの成長を心から応援する立場で、録音を丁寧に聞いた上でフィードバックしてください。
+スタッフの成長を心から応援する立場で、以下の【文字起こし】を最初から最後まで丁寧に読んだ上でフィードバックしてください。
+
+【重要ルール】
+- 評価・コメントは必ず【文字起こし】の実際の発言・内容のみを根拠にすること
+- 文字起こしに存在しない場面・発言・やりとりは絶対に作らないこと
+- goodsとimprovesは文字起こしの中の具体的な発言や場面を根拠に書くこと
 
 【あなたのスタンス】
 - まず「できていること」を具体的に見つけて、しっかり言葉にして褒める
 - 改善点は「ここをちょっと変えるだけでもっと良くなる！」という視点で伝える
 - 読んだスタッフが「よし、次も頑張ろう！」と思えるような温かいトーンで書く
-- 文字起こしの具体的な発言を引用して評価する
 
 【評価の観点】
 - 傾聴力・共感表現（患者の話をしっかり受け止めているか）
@@ -1812,7 +1822,7 @@ ${transcript}
 
 以下のJSON形式のみで出力してください（前後テキスト・コードブロック不要）:
 {
-  "intro": "担当者名を呼びかけて始める。具体的に光っていた場面を1つ挙げて褒め、さらに良くなれる予感も添える【100文字以内】",
+  "intro": "担当者名を呼びかけて始める。文字起こしの中の具体的な場面を1つ引用して褒め、さらに良くなれる予感も添える【100文字以内】",
   "steps": [],
   "radar_scores": {
     "傾聴力": 0〜3,
@@ -1822,19 +1832,19 @@ ${transcript}
     "クロージング": 0〜3
   },
   "goods": [
-    {"num":"①","title":"光っていたポイントのタイトル【12文字以内】","body":"なぜ良かったのか具体的に【50文字以内】"},
+    {"num":"①","title":"光っていたポイントのタイトル【12文字以内】","body":"文字起こしの具体的な発言を根拠に【50文字以内】"},
     {"num":"②","title":"","body":""},
     {"num":"③","title":"","body":""}
   ],
   "improves": [
-    {"theme":"テーマ【10文字以内】","issue":"現状の気づきを事実として【35文字以内】","suggestion":"具体的にどう変えるか前向きに【45文字以内】"},
+    {"theme":"テーマ【10文字以内】","issue":"文字起こしの事実を根拠に【35文字以内】","suggestion":"具体的にどう変えるか前向きに【45文字以内】"},
     {"theme":"","issue":"","suggestion":""},
     {"theme":"","issue":"","suggestion":""},
     {"theme":"","issue":"","suggestion":""}
   ]
 }
 radar_scoresの採点：0=できていない 1=△もうひとふんばり 2=○あとすこし 3=◎できている！
-必ず文字起こしの内容を根拠に評価してください。架空の内容は書かないでください。`;
+【文字起こし】に存在しない内容は絶対に書かないでください。`;
   }
 }
 
@@ -1973,6 +1983,20 @@ function saveRecord(){
   updateDatalistClinics();
   const label = _contracted===true?'成約': _contracted===false?'未成約':'検討中';
   alert('✅ 保存しました！（ステータス：'+label+'）');
+  if (_pendingRecordId) {
+    const rid = _pendingRecordId;
+    _pendingRecordId = null;
+    fetch(`${REDIS_URL}/lrem/${encodeURIComponent('transcripts:pending')}/0/${encodeURIComponent(rid)}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${REDIS_READ_TOKEN}` }
+    }).catch(()=>{});
+    redisList('transcripts:pending').then(ids => {
+      const countEl = document.getElementById('nav-pending-count');
+      const count = ids.map(id => id.replace(/^"|"$/g,'')).filter(id => id !== rid).length;
+      countEl.textContent = count;
+      countEl.style.display = count > 0 ? '' : 'none';
+    }).catch(()=>{});
+  }
 }
 
 function deleteRecord(id){
@@ -2809,17 +2833,57 @@ async function loadPendingTranscripts() {
 
 function usePendingTranscript(btn) {
   const r = JSON.parse(btn.dataset.record.replace(/&quot;/g, '"').replace(/&#39;/g, "'"));
-  const utterances = r.utterances || [];
-  const text = utterances.length > 0
-    ? utterances.map(u => "[話者"+u.speaker+"] "+u.text).join("\n")
+  const utts = r.utterances || [];
+  const text = utts.length > 0
+    ? utts.map(u => "[話者"+u.speaker+"] "+u.text).join("\n")
     : (r.transcript || "");
+
+  // 音声分析を計算
+  let audioAnalysis = null;
+  let spkRatio = [];
+  if (utts.length > 0) {
+    const spkTime = {};
+    utts.forEach(u => { spkTime[u.speaker] = (spkTime[u.speaker]||0) + (u.end - u.start); });
+    const total = Object.values(spkTime).reduce((a,b)=>a+b,0) || 1;
+    spkRatio = Object.entries(spkTime).map(([s,ms]) => ({
+      speaker: s, ratio: Math.round(ms/total*100), seconds: Math.round(ms/1000)
+    })).sort((a,b) => b.ratio - a.ratio);
+    const silences = [];
+    for (let i = 1; i < utts.length; i++) {
+      const gap = utts[i].start - utts[i-1].end;
+      if (gap > 2000) silences.push(Math.round(gap/1000));
+    }
+    const avgSilence = silences.length ? Math.round(silences.reduce((a,b)=>a+b,0)/silences.length) : 0;
+    const counselorSpk = spkRatio[0]?.speaker || 'A';
+    const counselorUtts = utts.filter(u => u.speaker === counselorSpk);
+    const counselorChars = counselorUtts.reduce((a,u) => a+(u.text||'').length, 0);
+    const counselorSec = spkRatio[0]?.seconds || 1;
+    const charsPerSec = counselorChars / counselorSec;
+    const speedScore = charsPerSec>=6&&charsPerSec<=10?3:charsPerSec>=4&&charsPerSec<=13?2:1;
+    const silCount = silences.length;
+    const silenceScore = silCount>=3&&silCount<=8?3:silCount>=1&&silCount<=12?2:1;
+    const counselorRatio = spkRatio[0]?.ratio || 50;
+    const balanceScore = counselorRatio>=40&&counselorRatio<=60?3:counselorRatio>=30&&counselorRatio<=70?2:1;
+    const audioSkillScores = {
+      '話すスピード': speedScore, '沈黙の活用': silenceScore, '発話バランス': balanceScore,
+      _detail: { charsPerSec: Math.round(charsPerSec*10)/10, silCount, counselorRatio }
+    };
+    audioAnalysis = { spkRatio, silences, utterances: utts.length, avgSilence, audioSkillScores };
+  }
+
   showPage("new");
+  _pendingRecordId = r.id; // 保存時にRedisから削除するため
   setTimeout(() => {
     const ta = document.getElementById("transcript");
     if (ta) { ta.value = text; ta.dispatchEvent(new Event("input")); }
     const cc = document.getElementById("charCount");
     if (cc) cc.textContent = text.length;
-  }, 100);
+    // 音声分析カードを表示
+    if (audioAnalysis) {
+      renderAudioAnalysis(audioAnalysis, spkRatio);
+      document.getElementById('audioSection').style.display = 'block';
+    }
+  }, 200);
 }
 
 window.addEventListener("load", async () => {

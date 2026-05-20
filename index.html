@@ -601,175 +601,7 @@ textarea:focus{border-color:var(--teal);background:var(--white)}
         </div>
 
         <div class="result-box" id="resultBox" style="display: none;">
-          <div id="audio-analysis-card" class="card">
-    <div class="card-title"><div class="icon">🎙️</div>音声分析レポート</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-      
-      <div style="background:var(--tealP);border-radius:8px;padding:12px">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">話者 B（カウンセラー推定）</div>
-        <div style="font-size:22px;font-weight:700;color:var(--teal)">53%</div>
-        <div style="font-size:11px;color:var(--muted)">76秒</div>
-      </div>
-      <div style="background:var(--greenP);border-radius:8px;padding:12px">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">話者 A（患者推定）</div>
-        <div style="font-size:22px;font-weight:700;color:var(--green)">47%</div>
-        <div style="font-size:11px;color:var(--muted)">67秒</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <div style="background:var(--bg);border-radius:6px;padding:8px 12px;font-size:11px"><span style="color:var(--muted)">話者交代</span><span style="font-weight:700;color:var(--navy);margin-left:6px">35回</span></div>
-      <div style="background:var(--bg);border-radius:6px;padding:8px 12px;font-size:11px"><span style="color:var(--muted)">2秒以上の沈黙</span><span style="font-weight:700;color:var(--navy);margin-left:6px">2回</span></div>
-      <div style="background:var(--bg);border-radius:6px;padding:8px 12px;font-size:11px"><span style="color:var(--muted)">平均沈黙時間</span><span style="font-weight:700;color:var(--navy);margin-left:6px">3秒</span></div>
-    </div></div><div class="fb-sheet" id="fbSheet">
-            <div class="fb-header">
-              <div class="fb-header-top">CASE FEEDBACK REPORT　／　カウンセリング振り返りレポート</div>
-              <div class="fb-clinic-row">
-                <span class="fb-clinic-name" id="res-clinic">テスト</span>
-                <span class="fb-badge" id="res-badge">テスト　/　初診カウンセリング</span>
-              </div>
-            </div>
-            <div class="fb-section"><div class="fb-section-title">■ はじめに</div><div class="fb-intro" id="res-intro">テストさん、「4つの約束」をスライドで丁寧に伝えた場面が光っていました！構成力が伝わります。あともう一歩で患者さんの心をぐっと掴める予感です！</div></div>
-            <div class="fb-section" id="res-radar-section" style=""><div class="fb-section-title" id="res-radar-title">■ 8ステップ スキルレーダー ＆ 素敵なポイント ✨</div><div style="display:flex;gap:12px;align-items:flex-start;padding:4px 0 0"><div style="flex-shrink:0;width:200px"><canvas id="radar-canvas" width="220" height="220" style="width: 200px; height: 200px; display: block; box-sizing: border-box;"></canvas></div><div style="width:240px;flex-shrink:0" id="res-goods-inline">
-      <div style="background:var(--greenP);border:1px solid var(--greenB);border-radius:7px;padding:7px 8px;margin-bottom:5px">
-        <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:2px">①</div>
-        <div style="font-size:11px;font-weight:700;color:#0F4D27;margin-bottom:2px">医院のこだわり発信</div>
-        <div style="font-size:10px;line-height:1.5;color:#1A5C32">「4つの約束」としてコンセプトをスライドで体系的に伝え、医院の姿勢をしっかり示せていました</div>
-      </div>
-      <div style="background:var(--greenP);border:1px solid var(--greenB);border-radius:7px;padding:7px 8px;margin-bottom:5px">
-        <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:2px">②</div>
-        <div style="font-size:11px;font-weight:700;color:#0F4D27;margin-bottom:2px">検査内容の具体説明</div>
-        <div style="font-size:10px;line-height:1.5;color:#1A5C32">「今日はレントゲンと口腔内チェック、次回はポケット検査」と分けて説明できていて親切な案内でした</div>
-      </div>
-      <div style="background:var(--greenP);border:1px solid var(--greenB);border-radius:7px;padding:7px 8px;margin-bottom:5px">
-        <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:2px">③</div>
-        <div style="font-size:11px;font-weight:700;color:#0F4D27;margin-bottom:2px">確認質問の実施</div>
-        <div style="font-size:10px;line-height:1.5;color:#1A5C32">「ここまで何か不安なことはありますか？」と患者への確認を自然に取り入れられていました</div>
-      </div></div></div></div>
-            <div class="fb-section" id="res-steps-section"><div class="fb-section-title">■ 8ステップ評価</div><div id="res-steps">
-      <div style="display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:start;background:#FEF5EC;border:1px solid #C87A1A30;border-radius:9px;padding:11px 13px;margin-bottom:7px">
-        <div style="width:24px;height:24px;border-radius:50%;background:#C87A1A;color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
-        <div>
-          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px">STEP1　迎え入れる・場の空気をつくる</div>
-          <div style="font-size:11px;color:#1A7A40;line-height:1.5;margin-bottom:2px">✅ 「くもさん」と名前で呼びかけるシーンが冒頭にあった</div>
-          <div style="font-size:11px;color:#C87A1A;line-height:1.5">💡 「スライド見えてますか？」など確認は◎。笑顔や一言添えてさらに安心感アップ！</div>
-        </div>
-        <div style="text-align:right;white-space:nowrap">
-          <span style="font-size:11px;font-weight:700;color:#C87A1A;background:white;border:1px solid #C87A1A40;border-radius:6px;padding:2px 8px">△ もうひとふんばり！</span>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:start;background:#E8F4F4;border:1px solid #1E7B7B30;border-radius:9px;padding:11px 13px;margin-bottom:7px">
-        <div style="width:24px;height:24px;border-radius:50%;background:#1E7B7B;color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
-        <div>
-          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px">STEP2　医院コンセプト・スタンスを伝える</div>
-          <div style="font-size:11px;color:#1A7A40;line-height:1.5;margin-bottom:2px">✅ 「4つの約束」「カウンセリングで安心感を」と医院のこだわりを伝えられた</div>
-          <div style="font-size:11px;color:#C87A1A;line-height:1.5">💡 「一緒に考えて決める」「何度でも相談OK」という言葉を一言加えるとさらに◎</div>
-        </div>
-        <div style="text-align:right;white-space:nowrap">
-          <span style="font-size:11px;font-weight:700;color:#1E7B7B;background:white;border:1px solid #1E7B7B40;border-radius:6px;padding:2px 8px">○ あとすこし</span>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:start;background:#FEF5EC;border:1px solid #C87A1A30;border-radius:9px;padding:11px 13px;margin-bottom:7px">
-        <div style="width:24px;height:24px;border-radius:50%;background:#C87A1A;color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
-        <div>
-          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px">STEP3　検査の重要性を理由から伝える</div>
-          <div style="font-size:11px;color:#1A7A40;line-height:1.5;margin-bottom:2px">✅ 「理想を実現するために今の状態を把握する」と検査の目的を伝えていた</div>
-          <div style="font-size:11px;color:#C87A1A;line-height:1.5">💡 「無症状でも進行する」「自然には治らない」など具体的な理由を添えると腹落ち感UP！</div>
-        </div>
-        <div style="text-align:right;white-space:nowrap">
-          <span style="font-size:11px;font-weight:700;color:#C87A1A;background:white;border:1px solid #C87A1A40;border-radius:6px;padding:2px 8px">△ もうひとふんばり！</span>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:start;background:#E8F4F4;border:1px solid #1E7B7B30;border-radius:9px;padding:11px 13px;margin-bottom:7px">
-        <div style="width:24px;height:24px;border-radius:50%;background:#1E7B7B;color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
-        <div>
-          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px">STEP4　検査の内容・流れを具体的に説明する</div>
-          <div style="font-size:11px;color:#1A7A40;line-height:1.5;margin-bottom:2px">✅ レントゲン・口腔内チェック・次回の検査項目まで具体的に案内できていた</div>
-          <div style="font-size:11px;color:#C87A1A;line-height:1.5">💡 所要時間や「痛みはありません」の一言があると患者さんの不安がさらに和らぎます！</div>
-        </div>
-        <div style="text-align:right;white-space:nowrap">
-          <span style="font-size:11px;font-weight:700;color:#1E7B7B;background:white;border:1px solid #1E7B7B40;border-radius:6px;padding:2px 8px">○ あとすこし</span>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:start;background:#F4F6F9;border:1px solid #6B7A8D30;border-radius:9px;padding:11px 13px;margin-bottom:7px">
-        <div style="width:24px;height:24px;border-radius:50%;background:#6B7A8D;color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">5</div>
-        <div>
-          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px">STEP5　次回来院の必要性を物語で伝える</div>
-          
-          <div style="font-size:11px;color:#C87A1A;line-height:1.5">💡 ロストスパイラルやメンテナンスの物語を加えると「守るために来る」意識が芽生えます！</div>
-        </div>
-        <div style="text-align:right;white-space:nowrap">
-          <span style="font-size:11px;font-weight:700;color:#6B7A8D;background:white;border:1px solid #6B7A8D40;border-radius:6px;padding:2px 8px">— 未実施</span>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:start;background:#FEF5EC;border:1px solid #C87A1A30;border-radius:9px;padding:11px 13px;margin-bottom:7px">
-        <div style="width:24px;height:24px;border-radius:50%;background:#C87A1A;color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">6</div>
-        <div>
-          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px">STEP6　次のアクションを明確にして締める</div>
-          <div style="font-size:11px;color:#1A7A40;line-height:1.5;margin-bottom:2px">✅ 「治療の方に早速移ります」と次へ進む案内ができていた</div>
-          <div style="font-size:11px;color:#C87A1A;line-height:1.5">💡 「今日→検査、次回→結果説明」と2ステップで伝えると患者さんが安心して臨めます！</div>
-        </div>
-        <div style="text-align:right;white-space:nowrap">
-          <span style="font-size:11px;font-weight:700;color:#C87A1A;background:white;border:1px solid #C87A1A40;border-radius:6px;padding:2px 8px">△ もうひとふんばり！</span>
-        </div>
-      </div></div></div>
-            <div class="fb-section" id="res-goods-section" style="display:none"><div class="fb-section-title">■ すでに素敵なポイント ✨</div><div class="good-grid" id="res-goods"><div class="good-card"><div class="good-num">①</div><div class="good-title">医院のこだわり発信</div><div class="good-body">「4つの約束」としてコンセプトをスライドで体系的に伝え、医院の姿勢をしっかり示せていました</div></div><div class="good-card"><div class="good-num">②</div><div class="good-title">検査内容の具体説明</div><div class="good-body">「今日はレントゲンと口腔内チェック、次回はポケット検査」と分けて説明できていて親切な案内でした</div></div><div class="good-card"><div class="good-num">③</div><div class="good-title">確認質問の実施</div><div class="good-body">「ここまで何か不安なことはありますか？」と患者への確認を自然に取り入れられていました</div></div></div></div>
-            <div class="fb-section"><div class="fb-section-title">■ もう少し工夫できそうなポイント</div><div class="improve-list" id="res-improves">
-    <div class="improve-item">
-      <div class="improve-num">1</div>
-      <div>
-        <div class="improve-theme">検査理由の深掘り</div>
-
-      </div>
-      <div><div class="improve-label">気づいたこと</div><div class="improve-text">検査の目的は伝わったが「なぜ必要か」の根拠が薄かった</div></div>
-      <div><div class="improve-label">こう変えてみませんか?</div><div class="improve-suggest">「歯は自然に治らない」「無症状でも進行する」など一言添えて腹落ち感を高めよう！</div></div>
-    </div>
-    <div class="improve-item">
-      <div class="improve-num">2</div>
-      <div>
-        <div class="improve-theme">物語での動機づけ</div>
-
-      </div>
-      <div><div class="improve-label">気づいたこと</div><div class="improve-text">ロストスパイラルやメンテナンスの話が今回は未実施だった</div></div>
-      <div><div class="improve-label">こう変えてみませんか?</div><div class="improve-suggest">「通わなくなると悪化する→メンテで守れる」という物語を短く伝えてみよう！</div></div>
-    </div>
-    <div class="improve-item">
-      <div class="improve-num">3</div>
-      <div>
-        <div class="improve-theme">次回ステップの明示</div>
-
-      </div>
-      <div><div class="improve-label">気づいたこと</div><div class="improve-text">「治療へ移ります」で終わり次回の流れが具体的でなかった</div></div>
-      <div><div class="improve-label">こう変えてみませんか?</div><div class="improve-suggest">「今日は検査、次回は結果を一緒に確認します」と2ステップで締めると安心感が増す！</div></div>
-    </div>
-    <div class="improve-item">
-      <div class="improve-num">4</div>
-      <div>
-        <div class="improve-theme">痛み・時間の案内</div>
-
-      </div>
-      <div><div class="improve-label">気づいたこと</div><div class="improve-text">検査内容は伝えたが所要時間・痛みの有無の説明がなかった</div></div>
-      <div><div class="improve-label">こう変えてみませんか?</div><div class="improve-suggest">「痛みはなく約〇分です」の一言を加えるだけで患者の不安がぐっと和らぎます！</div></div>
-    </div></div></div>
-            <div class="fb-footer">Counseling Bootcamp ／ 株式会社SABU</div>
-          </div>
-          <div class="card">
-            <div class="card-title"><div class="icon">💾</div>保存 &amp; PDF出力</div>
-            <div class="export-info"><strong>✏️ 内容を編集してからPDF出力できます</strong>「編集してPDF出力」ボタンで内容を確認・修正し、そのままPDFとして保存できます。</div>
-            <div style="margin-bottom:10px">
-              <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">成約ステータス</div>
-              <div style="display:flex;gap:8px">
-                <button id="btn-contracted" onclick="setContracted(true)" style="flex:1;height:36px;border-radius:8px;border:2px solid var(--border);background:white;color:var(--muted);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">✅ 成約</button>
-                <button id="btn-not-contracted" onclick="setContracted(false)" style="flex:1;height:36px;border-radius:8px;border:2px solid var(--border);background:white;color:var(--muted);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">❌ 未成約</button>
-                <button id="btn-pending" onclick="setContracted(null)" style="flex:1;height:36px;border-radius:8px;border:2px solid var(--tealM);background:var(--tealP);color:var(--teal);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">⏳ 検討中</button>
-              </div>
-            </div>
-            <div class="btn-row">
-              <button class="btn-sm teal" onclick="saveRecord()">💾 ツールに保存</button>
-              <button class="btn-sm" onclick="openPdfEditor(null, analysisResult)">✏️ 編集してPDF出力</button>
-              <button class="btn-sm ghost" onclick="resetForm()">↩ 新しい分析</button>
-            </div>
-          </div>
-        </div>
+        
       </div>
     </div>
 
@@ -1489,6 +1321,11 @@ function showPage(name,clinicName){
   });
   if(name==='all') renderAllList();
   if(name==='clinic')    openClinicPage(clinicName||currentClinic);
+  if(name==='new') {
+    const rb = document.getElementById('resultBox');
+    if(rb) { rb.className='result-box'; rb.style.display='none'; }
+    analysisResult = null;
+  }
 }
 
 // ── Sidebar ──
